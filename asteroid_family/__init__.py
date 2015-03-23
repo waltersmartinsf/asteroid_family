@@ -2,14 +2,14 @@
 
 #Importando bibliotecas que serao usadas e definindo janela grafica
 from pylab import *
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import numpy as np
 import time
 from pandas import *
 from astropy import constants as const
 from scipy.stats import maxwell
 import os
-import seaborn
+#import seaborn
 plt.rcParams['figure.figsize'] = (14.0,8.0) # change figure size
 
 #Useful constants
@@ -20,6 +20,7 @@ UA = 1.49597870e+11 #1 UA to m
 AU = 1.49597870e13 # 1cm in AU
 YEAR = 31557600. #1 year in seconds
 km=100000 #1km in cm
+AUyear = 2.10945021e-6 # 1cm/s in AU/year
 
 #import data
 cts_velocidade = read_csv('./data/Resultados_Ajuste_Velocidade.csv', sep=' ')
@@ -29,6 +30,7 @@ cts_energia = read_csv('./data/cts_energy.csv', sep=' ')
 ind, razaoV, chi_velocidade, k3, k2, k1, T3, T2, T1, log_v1, log_v2 = cts_velocidade.values[0]
 ind, razaoM, chi_massa, b1, b2, b3, W1, W2, W3, log_m1, log_m2 =cts_massa.values[0]
 ind, C1, C2 = cts_energia.values[0]
+B1, B2, B3 = 10**W1, 10**W2, 10**W3
 
 r1 = (1-b1)/k1
 r2 = (1-b2)/k2
@@ -46,6 +48,7 @@ v2 = 10**(log_v2)
 # print C1, C2
 # print r1, r2
 
+#Functions for everything: differentiated and homogeneus families of asteroids
 def mean_vej(norm_massa):
     """
     Calculate the mean velocity of ejection
@@ -111,3 +114,245 @@ def mass_distribution(maximum):
     massa = np.sort(massa)
 
     return massa
+
+def mean_vej_distribution(massa):
+    """
+    Calculate a mean ejection velocity field for a given normalized data distribution of mass
+    ___
+
+    massa: normalized mass distribuiton, array-like object
+
+    Example:
+
+    """
+    VejM = np.zeros(len(massa))
+    for i in range(len(VejM)):
+        VejM[i] = mean_vej(massa[i])
+
+    return VejM
+
+def velocity_field(mass, show_time):
+    """
+    mass: normalized mass distribution
+    show_time: string. If show_time=='YES', it's show the duration of the process.
+
+    Return:
+
+    Velocity field for the given normalized mass distribution, assmuming a Maxwellian Distribution for the velocity field for each mean velocity.
+    ___
+
+    Example:
+
+    In [1]: asteroid_family.mass_distribution(0.3)
+
+    In [2]: a = asteroid_family.mass_distribution(0.3)
+
+    b = asteroid_family.mean_vej_distribution(a)
+
+    In [3]: asteroid_family.velocity_field(b,'YES')
+    Duration [seconds] =  0.412480831146
+    Out[3]:
+    array([  45.89043405,  118.93529017,   44.34338289, ...,    5.96927437,
+          8.80950761,   17.1578176 ])
+    """
+
+    VejM = mean_vej_distribution(mass)
+    min_Vej = 0
+    tempo = time.time()
+
+    ejecao = np.zeros(len(VejM))
+
+    for i in range(len(VejM)):
+        ejecao[i] = maxwell.rvs(scale=VejM[i]/np.sqrt(3.))
+        if ejecao[i] < min_Vej:
+            while ejecao[i] < min_Vej:
+                ejecao[i] = maxwell.rvs(scale=VejM[i]/np.sqrt(3.))
+
+    tempo = abs(tempo - time.time())
+    if show_time == 'YES':
+        print '\n Obtain velocity field: duration [seconds] = ', tempo,'\n'
+    else:
+        print '\n'
+
+    return ejecao
+
+def catastrophic_energy(rpb,rho,Vi):
+    """
+    Return the catastrofic energy in c.g.s.
+    Based in Stewart and Leinhardt(2009)
+
+    rpb: parental radius in km
+    rho: mean density of the system in cgs
+    Vi: impact velocity in km/s
+    """
+    # qs, qg, fi, mi: constants of material
+    if rho < 4.0:
+        qs, qg, fi, mi = 7.0e4, 1e-4, 8, 0.5
+    else:
+        qs, qg, fi, mi = 500.0, 1.0e-4, 6., 0.4
+    Mcomb = (4/3.)*np.pi*((rpb*1e5)**3)*rho
+    Vi = (Vi*1.e5)
+    RC = ((3*Mcomb)/(4*pi))**(1/3.)
+    QD = qs*(RC**(9*mi*(3-2*fi)))*(Vi**(2-3*mi))+qg*(RC**(3*mi))*(Vi**(2-3*mi))
+    return QD
+
+def min_Vej(E, Mtot, Mmin, v2, C1, C2, r1, r2, B1, b1, B2, b2, B3, b3):
+    """
+    Obtain the minimum velocity for given system.
+
+    E: kinetic energy.
+
+    Mtot: total mass of the system in c.g.s. or normalized.
+
+    Mmin: minimum mass of the system in c.g.s. or normalized.
+
+    v2: constant of maximum mean velocity
+    C1,C2,r1,r2: constants of the relationship beteween mass and velocity
+    B1,B2,B3,b1,b2,b3: constants of the cumulative distribution of fragments
+
+    This constants, if not given, the code assume the default normalized parameters only if you enter the names os the constants (not like string).
+    """
+    parte1 = (((C1**(2)) * (Mtot**(2*r1)) * (b1*B1))/(2*(1-b1-2*r1)))*(((m1*Mtot)**(1-b1-2*r1))-(Mmin**(1-b1-2*r1)))
+    parte2 = (((C2**(2)) * (Mtot**(2*r2)) * (b2*B2))/(2*(1-b2-2*r2)))*(((m2*Mtot)**(1-b2-2*r2))-((m1*Mtot)**(1-b2-2*r2)))
+    parte3 = (((v2**2) * (b3*B3))/(2*(1-b3)))*((Mtot**(1-b3))-((m2*Mtot)**(1-b3)))
+    Parcial = (parte1 + parte2 + parte3)
+    return np.sqrt(E/Parcial)
+
+def mag_absoluta(pv, D):
+    '''
+    pv: geometric albedo
+    D: diameter in km
+
+    Based in equation given by Parker et al.(2008).
+    '''
+    return 18.1 - 2.4 * np.log10(pv/0.1) - 5 * np.log10(D)
+
+# Differentiated asteroid family
+def differentiated_family(composition, rpb, rho_mantle, rho_core, Vi, fke, maximum, pv_core, pv_mantle, show_time):
+    """
+    composition: string. Given the initial meteoritic composition for estimate the core radius. Using data from Gaffey et al.(1993).
+    Compostion can be use 'H' for condritic ordinary H composition, 'L' for ordinary L composition, 'LL' for ordinary LL composition,
+    'CO' for condritic carbonaceus O composition, and 'CV' for condritic carbonaceus V composition.
+
+    rpb: radius of the parental body in kilometers.
+
+    rho_mantle: density of the mantle in c.g.s. units.
+
+    rho_core: density of the core in c.g.s. units.
+
+    Vi: impact velocity in km/s.
+
+    fke: inelastic of the parental body.
+
+    maximum: value of the maximum mass of the distrbution of the fragments.
+
+    pv_core: geometric albedo for the fragments from the core of the parental body.
+
+    pv_mantle: geometric albedo for the fragments from the mantle of the parental body.
+
+    show_time: string. If show_time=='YES', it's show the duration of the process.
+    ___
+
+    Return:
+
+    mass distribution (array-like), velocity field (array-like), density (array-like), radius (array-like), absolute magnitude (array-like)
+    ___
+
+    Example:
+
+    """
+    #Ratio between core radius and the parental radius given a initial compositon for the parental body.
+    #Gaffey et al.(1993)
+    H  = 0.51
+    L  = 0.43
+    LL = 0.39
+    CV = (0.37+0.31)/2.
+    #CO = (0.37+0.31)/2.
+
+    #Parental body data
+    rpb = rpb*1e5 #raio em cgs
+    rho_nucleo = rho_core
+    rho_manto = rho_mantle
+
+    if composition == 'H':
+        ratio = H
+    if composition == 'L':
+        ratio = L
+    if composition == 'LL':
+        ratio = LL
+    if composition == 'CO' or composition == 'CV':
+        ratio = CV
+
+    rpb_nucleo = ratio*rpb
+
+    #Total mass and volume
+    volume_total = (4/3.)*np.pi*(rpb**3)
+    volume_nucleo = (4/3.)*np.pi*(rpb_nucleo**3)
+    massa_nucleo = rho_nucleo*volume_nucleo
+    volume_manto = volume_total - volume_nucleo
+    massa_manto = rho_manto*volume_manto
+    Mtot  = massa_nucleo + massa_manto
+    #Mmax = 0.5*Mtot
+    #print 'Mtot[g] = ',Mtot
+    #print 'Mmax[g] = ', Mmax
+    Mmin = Mtot*(10**(-4.5))
+
+    #Calculate the catastrophic energy for the system
+    rho = (rho_manto+rho_nucleo)/2.
+    QD = catastrophic_energy(rpb*1e-5, rho, Vi)
+
+    #kinetic energy
+    E = QD * Mtot * fke
+
+    #Change the normalized system to the c.g.s. units
+    B11, B22, B33 = float(B1*(Mtot**(b1))), float(B2*(Mtot**(b2))), float(B3*(Mtot**(b3)))
+    #print 'B11, B22, B33 = ', B11, B22, B33
+
+    Vmin = min_Vej(E, Mtot, Mmin, v2, C1, C2, r1, r2, B11, b1, B22, b2, B33, b3)
+
+    #print 'Vmin [cm/s] = ', Vmin
+    # print 'max V(m): ', (max(ejecao)*Vmin)*1e-5,' km/s'
+    # print 'max <V(m)>: ', mean_vej(10**-4.5)*Vmin*1e-5,' km/s'
+    # print 'V1(m1): ', (10**(log_v1))*Vmin*1e-5,' km/s'
+    # print 'V2(m2): ', (10**(log_v2))*Vmin*1e-5,' km/s'
+
+    C11 = C1 * Vmin * (Mtot**(r1))
+    C22 = C2 * Vmin * (Mtot**(r2))
+    #print 'C1, C2 = ', C11, C22
+
+    #Create the mass distribution
+    massa = mass_distribution(maximum)
+    massa = massa*Mtot
+
+    #Calculate the mean velocity
+    ejecao = velocity_field(massa, show_time)
+    Vej = ejecao*Vmin*AUyear
+
+    #obtain the density of the fragments
+    massa_acumulada = 0
+    densidade = np.zeros(len(massa))
+    i = 0
+    for i in range(len(massa)):
+        if i != max(range(len(massa))):
+            if massa_acumulada < (massa_manto/Mtot):
+                densidade[i] =rho_manto
+                massa_acumulada = massa_acumulada + (massa[i]/Mtot)
+                #print massa_acumulada
+            else:
+                densidade[i] = rho_nucleo
+        else:
+            densidade[i] = rho_nucleo
+
+    #obtain the radius of the fragments
+    raio = ((3./(4*np.pi))*(massa/densidade))**(1/3.)
+    raio = raio*1e-5
+
+    #obtain the absolute magnitude of the asteroid
+    H = np.zeros(len(raio))
+    for i in range(len(raio)):
+        if densidade[i] == rho_nucleo:
+            H[i] = mag_absoluta(pv_mantle,2*raio[i])
+        if densidade[i] == rho_manto:
+            H[i] = mag_absoluta(pv_core,2*raio[i])
+
+    return massa, Vej, densidade, raio, H
