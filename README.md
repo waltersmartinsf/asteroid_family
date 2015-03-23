@@ -19,18 +19,26 @@ This package is usefull to simulate a synthethic asteroid family.
 Functions:
 
 homogeneus_family
+
 differentiated_family
+
 mass_distribution
+
 min_Vej
+
 mean_vej
+
 mean_vej_distribution
+
 velocity_field
+
 catastrophic_energy
+
 yarkovsky_dadt
+
 yakovsky_change_unit
+
 mag_absoluta
-
-
 ___
 
 This package need:
