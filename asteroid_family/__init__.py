@@ -8,6 +8,20 @@ ___
 
 This package is usefull to simulate a synthethic asteroid family.
 
+Functions:
+
+homogeneus_family
+differentiated_family
+mass_distribution
+min_Vej
+mean_vej
+mean_vej_distribution
+velocity_field
+catastrophic_energy
+yarkovsky_dadt
+yakovsky_change_unit
+mag_absoluta
+
 """
 #Importando bibliotecas que serao usadas e definindo janela grafica
 from pylab import *
@@ -68,7 +82,7 @@ v2 = 10**(log_v2)
 #Test function:
 def test_function():
     print "Baka-chan!"
-    
+
 #Functions for everything: differentiated and homogeneus families of asteroids
 def mean_vej(norm_massa):
     """

@@ -12,6 +12,24 @@ Differentiated family of asteroids is a family of asteroids that came from a dif
 
 The new model was based on the analytical model of (Petit & Farinella, 1993) and numerical results of Jutzi et al. (2010).
 
+___
+
+This package is usefull to simulate a synthethic asteroid family.
+
+Functions:
+
+homogeneus_family
+differentiated_family
+mass_distribution
+min_Vej
+mean_vej
+mean_vej_distribution
+velocity_field
+catastrophic_energy
+yarkovsky_dadt
+yakovsky_change_unit
+mag_absoluta
+
 
 ___
 
