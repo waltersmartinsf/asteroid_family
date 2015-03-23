@@ -40,7 +40,13 @@ yakovsky_change_unit
 
 mag_absoluta
 ___
+How to install:
 
+Dowloaded this package and in a terminal:
+
+$ python setup.py install
+
+___
 This package need:
 
 Numpy
