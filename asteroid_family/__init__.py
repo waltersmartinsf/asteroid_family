@@ -260,6 +260,10 @@ def differentiated_family(composition, rpb, rho_mantle, rho_core, Vi, fke, maxim
 
     Example:
 
+    In [1]: massa, vej, densidade, raio, H = asteroid_family.differentiated_family('H',130,3,7,5,0.01,0.5,0.2,0.2,'YES')
+
+    Obtain velocity field: duration [seconds] =  0.377580881119
+
     """
     #Ratio between core radius and the parental radius given a initial compositon for the parental body.
     #Gaffey et al.(1993)
@@ -356,3 +360,136 @@ def differentiated_family(composition, rpb, rho_mantle, rho_core, Vi, fke, maxim
             H[i] = mag_absoluta(pv_core,2*raio[i])
 
     return massa, Vej, densidade, raio, H
+
+def yarkovsky_dadt(D,obliq):
+    """
+    Calculate the Yarkovsky drift in semi-major axis in time [AU/Myr]. Based in Roig et al.(2008).
+    ___
+    D: diameter of the asteroid in km. (double-float or array-like object)
+    obliq: obliquty of the asteroid (double-float or array-like object)
+    ___
+
+    Example:
+
+    In [1]: mass, vej, density, radius, H = asteroid_family.differentiated_family('H',130,3,7,5,0.01,0.5,0.2,0.2,'YES')
+
+    Obtain velocity field: duration [seconds] =  0.384955883026
+
+    In [2]: import numpy as np
+
+    In [3]: dadt = asteroid_family.yarkovsky_dadt(2*radius,np.zeros(len(raio)))
+
+    In [4]: dadt
+    Out[4]:
+    array([  2.88357030e-05,   2.88357030e-05,   2.88357030e-05, ...,
+                4.86320757e-06,   4.72341538e-06,   4.71617023e-06])
+
+    In [5]: dadt = asteroid_family.yarkovsky_dadt(2*raio,np.random.uniform(0,np.pi,len(massa)))
+
+    In [6]: print dadt
+    [ -1.60343954e-05  -2.72928891e-05   1.11210017e-05 ...,  -3.34213765e-06
+        -2.46130825e-06   4.51568450e-06]
+
+    In [7]: import matplotlib.pyplot as plt
+    In [8]: plt.hist(dadt)
+    Out[8]:
+    (array([ 169.,  282.,  301.,  362.,  320.,  299.,  326.,  310.,  264.,  177.]),
+    array([ -2.88332378e-05,  -2.30789504e-05,  -1.73246630e-05,
+            -1.15703756e-05,  -5.81608815e-06,  -6.18007481e-08,
+            5.69248666e-06,   1.14467741e-05,   1.72010615e-05,
+            2.29553489e-05,   2.87096363e-05]),
+        <a list of 10 Patch objects>)
+    In[9]: plt.show()
+
+    """
+    dadt = 2.5e-4*(1./D)*np.cos(obliq)
+    return dadt
+
+def yakovsky_change_unit(dadt):
+    """
+    Change the drift of Yarkovsky effect from AU/Myr to AU/year. Essencial for some orbital integrators.
+    """
+    for i in range(len(dadt)):
+        dadt [i] =dadt[i]/(1.e6)
+    return dadt
+
+#homogeneus family
+def homogeneus_family(rpb, rho, Vi, fke, maximum, pv, show_time):
+    """
+    rpb: radius of the parental body in kilometers.
+
+    rho: density of the fragments in c.g.s..
+
+    Vi: impact velocity in km/s.
+
+    fke: inelastic of the parental body.
+
+    maximum: value of the maximum mass of the distrbution of the fragments.
+
+    pv: geometric albedo for the fragments.
+
+    show_time: string. If show_time=='YES', it's show the duration of the process.
+    ___
+
+    Return:
+
+    mass distribution (array-like), velocity field (array-like), density (array-like), radius (array-like), absolute magnitude (array-like)
+    ___
+
+    Example:
+
+    """
+    #Parental body data
+    rpb = rpb*1e5 #raio em cgs
+
+    #Total mass and volume
+    volume_total = (4/3.)*np.pi*(rpb**3)
+    Mtot  = rho*volume_total
+    Mmin = Mtot*(10**(-4.5))
+
+    #Calculate the catastrophic energy for the system
+    QD = catastrophic_energy(rpb*1e-5, rho, Vi)
+
+    #kinetic energy
+    E = QD * Mtot * fke
+
+    #Change the normalized system to the c.g.s. units
+    B11, B22, B33 = float(B1*(Mtot**(b1))), float(B2*(Mtot**(b2))), float(B3*(Mtot**(b3)))
+    #print 'B11, B22, B33 = ', B11, B22, B33
+
+    Vmin = min_Vej(E, Mtot, Mmin, v2, C1, C2, r1, r2, B11, b1, B22, b2, B33, b3)
+
+    #print 'Vmin [cm/s] = ', Vmin
+    # print 'max V(m): ', (max(ejecao)*Vmin)*1e-5,' km/s'
+    # print 'max <V(m)>: ', mean_vej(10**-4.5)*Vmin*1e-5,' km/s'
+    # print 'V1(m1): ', (10**(log_v1))*Vmin*1e-5,' km/s'
+    # print 'V2(m2): ', (10**(log_v2))*Vmin*1e-5,' km/s'
+
+    C11 = C1 * Vmin * (Mtot**(r1))
+    C22 = C2 * Vmin * (Mtot**(r2))
+    #print 'C1, C2 = ', C11, C22
+
+    #Create the mass distribution
+    massa = mass_distribution(maximum)
+    massa = massa*Mtot
+
+    #Calculate the mean velocity
+    ejecao = velocity_field(massa, show_time)
+    Vej = ejecao*Vmin*AUyear
+
+    #obtain the density of the fragments
+    densidade = np.zeros(len(massa))
+    for i in range(len(massa)):
+        densidade[i] = rho
+
+    #obtain the radius of the fragments
+    raio = ((3./(4*np.pi))*(massa/densidade))**(1/3.)
+    raio = raio*1e-5
+
+    #obtain the absolute magnitude of the asteroid
+    H = np.zeros(len(raio))
+    for i in range(len(raio)):
+        H[i] = mag_absoluta(pv,2*raio[i])
+
+    return massa, Vej, densidade, raio, H
+###############################################################################
