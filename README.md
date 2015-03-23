@@ -44,7 +44,7 @@ How to install:
 
 Dowloaded this package and in a terminal:
 
-$ python setup.py install
+python setup.py install
 
 ___
 This package need:
