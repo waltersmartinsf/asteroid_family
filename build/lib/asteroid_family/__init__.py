@@ -206,8 +206,6 @@ def velocity_field(mass, show_time):
     tempo = abs(tempo - time.time())
     if show_time == 'YES':
         print '\n Obtain velocity field: duration [seconds] = ', tempo,'\n'
-    else:
-        print '\n'
 
     return ejecao
 
@@ -233,7 +231,7 @@ def catastrophic_energy(rpb,rho,Vi):
 
 def min_Vej(E, Mtot, Mmin, v2, C1, C2, r1, r2, B1, b1, B2, b2, B3, b3):
     """
-    Obtain the minimum velocity for given system.
+    Obtain the minimum velocity for given system. This function is used in other two functions: homogeneus_family and differentiated_family.
 
     E: kinetic energy.
 
@@ -241,11 +239,7 @@ def min_Vej(E, Mtot, Mmin, v2, C1, C2, r1, r2, B1, b1, B2, b2, B3, b3):
 
     Mmin: minimum mass of the system in c.g.s. or normalized.
 
-    v2: constant of maximum mean velocity
-    C1,C2,r1,r2: constants of the relationship beteween mass and velocity
-    B1,B2,B3,b1,b2,b3: constants of the cumulative distribution of fragments
-
-    This constants, if not given, the code assume the default normalized parameters only if you enter the names os the constants (not like string).
+    v2, C1, C2, r1, r2, B1, b1, B2, b2, B3, b3: constants in the model
     """
     parte1 = (((C1**(2)) * (Mtot**(2*r1)) * (b1*B1))/(2*(1-b1-2*r1)))*(((m1*Mtot)**(1-b1-2*r1))-(Mmin**(1-b1-2*r1)))
     parte2 = (((C2**(2)) * (Mtot**(2*r2)) * (b2*B2))/(2*(1-b2-2*r2)))*(((m2*Mtot)**(1-b2-2*r2))-((m1*Mtot)**(1-b2-2*r2)))
@@ -401,7 +395,7 @@ def yarkovsky_dadt(D,obliq):
     Calculate the Yarkovsky drift in semi-major axis in time [AU/Myr]. Based in Roig et al.(2008).
     ___
     D: diameter of the asteroid in km. (double-float or array-like object)
-    obliq: obliquty of the asteroid (double-float or array-like object)
+    obliq: obliquty of the asteroid in degrees (double-float or array-like object)
     ___
 
     Example:
@@ -437,7 +431,7 @@ def yarkovsky_dadt(D,obliq):
     In[9]: plt.show()
 
     """
-    dadt = 2.5e-4*(1./D)*np.cos(obliq)
+    dadt = 2.5e-4*(1./D)*np.cos(obliq*(np.pi/180.))
     return dadt
 
 def yakovsky_change_unit(dadt):
@@ -528,3 +522,130 @@ def homogeneus_family(rpb, rho, Vi, fke, maximum, pv, show_time):
 
     return massa, Vej, densidade, raio, H
 ###############################################################################
+
+#Dynamic functions
+
+def isotropic_velocity(VejM):
+    """
+    Assuming isotropic direction for the ejection field, this function obtain the radial, perpendicular and normal velocity of the fragment.
+    ___
+    VejM: velocity ejection of the fragment, double-float number
+    ___
+
+    Return: VR (array-like), VT (array-like), VW (array-like), V2 (array-like)
+
+    VR: radial velocity (direction of the Sun)
+
+    VT: tranversal velocity
+
+    VW: normal velocity in the orbital plane
+
+    V2: (VR^2 + VT^2 + VW^2)
+
+    ___
+    Example:
+
+    """
+    norm = np.sqrt(3)
+    VejR=VejM*np.random.normal(0, 0.1)/norm
+    VejT=VejM*np.random.normal(0, 0.1)/norm
+    VejW=VejM*np.random.normal(0, 0.1)/norm
+    Vej2=(VejR**2)+(VejT**2)+(VejW**2)
+    return VejR, VejT, VejW, Vej2
+
+
+def gauss_equations(Vej,a,e,i,period,show_time):
+    """
+    Calculate the Gauss equation for a given position in proper space of the parental body.
+    ___
+
+    Vej: velocity field of the fragments in AU/yr (array-like)
+
+    a: semi-major axis of the parental body in astronomical units [AU]
+
+    e: excentricity of the parental body
+
+    i: inclination of the parental body in degrees
+
+    period: period of the parental body in years [yr]
+    ___
+
+    Return:
+    VR: radial velocity of the fragments in AU/yr (array-like)
+
+    VT: tranversal velocity of the fragments in AU/yr (array-like)
+
+    VW: normal velocity of the fragments in AU/yr (array-like)
+
+    A: semi-major axis (array-like),
+
+    E: excentricity (array-like),
+
+    I: inclination I (array-like),
+
+    dA: variations of semi-major axis (array-like),
+
+    dE: variations of excentricity (array-like)
+
+    dI: variations of inclination (array-like).
+    ___
+
+    Example:
+
+    #Creating a differentiated asteroid family in a = 2.26 AU, e = 0.09, and i = 6.28 degrees:
+
+    massa, vej, rho, raio, mag = ast.differentiated_family('H',130,3,7,5,0.01,0.5,0.2,0.2,'YES')
+
+    #Appling Gauss equations:
+    VT, VR, VW, A, E, I, dA, dE, dI = ast.gauss_equations(vej, 2.263620, 0.096125, 6.287527, 3.41, 'YES')
+
+    """
+    #    f: true anomaly of the parental body
+    #  wpf: true anomaly plus
+    f = 95 #anomalia verdadeira (graus)
+    wpf = 0 #relacao w+f .................................... Morbidelli et al.(1995)
+
+    na = 2*np.pi*a/period #mean orbital velocity [AU/year]
+    f = f/DEGRAD #Anomalia verdadeira: transformamos graus em radianos
+    wpf = wpf/DEGRAD
+    cosf = np.cos(f)
+    sinf = np.sin(f)
+    coswf = np.cos(wpf)
+    eta1 = np.sqrt(1.0-(e**2))
+    eta2 = 1.0+e*cosf
+
+    tempo = time.time()
+    A, E, I = [], [], []
+    dA, dE, dI = [], [], []
+    VR, VT, VW = [], [], []
+    Vinf = 0
+    contador = 0
+    while contador < len(Vej):
+        VejR, VejT, VejW, Vej2 = isotropic_velocity(Vej[contador])
+        #print VejR, VejT, VejW
+        VinfR = VejR
+        VinfT = VejT
+        VinfW = VejW
+        #Calculando as variacoes em elementos orbitais_ eq.s de Gauss (Zappala et al., 1996)
+        da = (a/na)*(2.0/eta1)*(eta2*VinfT+(e*sinf)*VinfR)
+        de = ((e+2*cosf+e*(cosf)**2)/(eta2))*VinfT + sinf*VinfR
+        de = (eta1/na)*de
+        di = (eta1/na)*(coswf/eta2)*VinfW
+        A.append(a+da)
+        E.append(e+de)
+        I.append(i+di*DEGRAD)
+        dA.append(da)
+        dE.append(de)
+        dI.append(di)
+        VR.append(VinfR)
+        VT.append(VinfT)
+        VW.append(VinfW)
+        #print 'Particula: ',contador+1
+        contador = contador + 1
+
+
+    tempo = time.time() - tempo
+    if show_time == 'YES':
+        print '\n Applied Gauss Equations: duration [seconds] = ', tempo,'\n'
+
+    return VR, VT, VW, A, E, I, dA, dE, dI
