@@ -22,17 +22,14 @@ yakovsky_change_unit
 mag_absoluta
 
 """
-#Importando bibliotecas que serao usadas e definindo janela grafica
-#from pylab import *
-#import matplotlib.pyplot as plt
+
 import numpy as np
 import time
-#from pandas import *
 from astropy import constants as const
 from scipy.stats import maxwell
 import os
-#import seaborn
-#plt.rcParams['figure.figsize'] = (14.0,8.0) # change figure size
+
+from statistic import *
 
 #Useful constants
 pi = np.pi #valor de pi= 3.141592653589793
@@ -576,17 +573,17 @@ def gauss_equations(Vej,a,e,i,period,show_time):
 
     VW: normal velocity of the fragments in AU/yr (array-like)
 
-    A: semi-major axis (array-like),
+    A: semi-major axis in astronomical unit (array-like),
 
     E: excentricity (array-like),
 
-    I: inclination I (array-like),
+    I: inclination I in degrees (array-like),
 
-    dA: variations of semi-major axis (array-like),
+    dA: variations of semi-major axis in astronomical unit (array-like),
 
     dE: variations of excentricity (array-like)
 
-    dI: variations of inclination (array-like).
+    dI: variations of inclination in degrees (array-like).
     ___
 
     Example:
@@ -635,7 +632,7 @@ def gauss_equations(Vej,a,e,i,period,show_time):
         I.append(i+di*DEGRAD)
         dA.append(da)
         dE.append(de)
-        dI.append(di)
+        dI.append(di*DEGRAD)
         VR.append(VinfR)
         VT.append(VinfT)
         VW.append(VinfW)
