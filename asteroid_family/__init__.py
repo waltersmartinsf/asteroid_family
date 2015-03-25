@@ -13,7 +13,6 @@ Functions:
 homogeneus_family
 differentiated_family
 mass_distribution
-min_Vej
 mean_vej
 mean_vej_distribution
 velocity_field
@@ -24,7 +23,7 @@ mag_absoluta
 
 """
 #Importando bibliotecas que serao usadas e definindo janela grafica
-from pylab import *
+#from pylab import *
 #import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -33,7 +32,7 @@ from astropy import constants as const
 from scipy.stats import maxwell
 import os
 #import seaborn
-plt.rcParams['figure.figsize'] = (14.0,8.0) # change figure size
+#plt.rcParams['figure.figsize'] = (14.0,8.0) # change figure size
 
 #Useful constants
 pi = np.pi #valor de pi= 3.141592653589793
@@ -384,9 +383,9 @@ def differentiated_family(composition, rpb, rho_mantle, rho_core, Vi, fke, maxim
     H = np.zeros(len(raio))
     for i in range(len(raio)):
         if densidade[i] == rho_nucleo:
-            H[i] = mag_absoluta(pv_mantle,2*raio[i])
-        if densidade[i] == rho_manto:
             H[i] = mag_absoluta(pv_core,2*raio[i])
+        if densidade[i] == rho_manto:
+            H[i] = mag_absoluta(pv_mantle,2*raio[i])
 
     return massa, Vej, densidade, raio, H
 
@@ -556,7 +555,7 @@ def isotropic_velocity(VejM):
 
 def gauss_equations(Vej,a,e,i,period,show_time):
     """
-    Calculate the Gauss equation for a given position in proper space of the parental body.
+    Calculate the Gauss equation for a given position of the parental body in proper space.
     ___
 
     Vej: velocity field of the fragments in AU/yr (array-like)
@@ -567,7 +566,7 @@ def gauss_equations(Vej,a,e,i,period,show_time):
 
     i: inclination of the parental body in degrees
 
-    period: period of the parental body in years [yr]
+    period: orbital period of the parental body in years [yr]
     ___
 
     Return:
@@ -594,10 +593,10 @@ def gauss_equations(Vej,a,e,i,period,show_time):
 
     #Creating a differentiated asteroid family in a = 2.26 AU, e = 0.09, and i = 6.28 degrees:
 
-    massa, vej, rho, raio, mag = ast.differentiated_family('H',130,3,7,5,0.01,0.5,0.2,0.2,'YES')
+    massa, vej, rho, raio, mag = asteroid_family.differentiated_family('H',130,3,7,5,0.01,0.5,0.2,0.2,'YES')
 
     #Appling Gauss equations:
-    VT, VR, VW, A, E, I, dA, dE, dI = ast.gauss_equations(vej, 2.263620, 0.096125, 6.287527, 3.41, 'YES')
+    VT, VR, VW, A, E, I, dA, dE, dI = asteroid_family.gauss_equations(vej, 2.263620, 0.096125, 6.287527, 3.41, 'YES')
 
     """
     #    f: true anomaly of the parental body
