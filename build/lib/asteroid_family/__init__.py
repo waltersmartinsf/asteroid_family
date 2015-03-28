@@ -29,8 +29,6 @@ from astropy import constants as const
 from scipy.stats import maxwell
 import os
 
-from statistic import *
-
 #Useful constants
 pi = np.pi #valor de pi= 3.141592653589793
 DEGRAD = 180.0/pi #change rad to degrees
@@ -280,7 +278,7 @@ def differentiated_family(composition, rpb, rho_mantle, rho_core, Vi, fke, maxim
 
     Return:
 
-    mass distribution (array-like), velocity field (array-like), density (array-like), radius (array-like), absolute magnitude (array-like)
+    mass distribution [g] (array-like), velocity field (array-like), density in c.g.s. (array-like), radius in km (array-like), absolute magnitude (array-like)
     ___
 
     Example:
@@ -354,7 +352,7 @@ def differentiated_family(composition, rpb, rho_mantle, rho_core, Vi, fke, maxim
     massa = massa*Mtot
 
     #Calculate the mean velocity
-    ejecao = velocity_field(massa, show_time)
+    ejecao = velocity_field(massa/sum(massa), show_time)
     Vej = ejecao*Vmin*AUyear
 
     #obtain the density of the fragments
@@ -499,7 +497,7 @@ def homogeneus_family(rpb, rho, Vi, fke, maximum, pv, show_time):
     massa = massa*Mtot
 
     #Calculate the mean velocity
-    ejecao = velocity_field(massa, show_time)
+    ejecao = velocity_field(massa/sum(massa), show_time)
     Vej = ejecao*Vmin*AUyear
 
     #obtain the density of the fragments
