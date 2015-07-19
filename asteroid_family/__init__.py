@@ -25,7 +25,7 @@ mag_absoluta
 
 import numpy as np
 import time
-from astropy import constants as const
+import astropy.constants as const
 from scipy.stats import maxwell
 import os
 
@@ -643,3 +643,57 @@ def gauss_equations(Vej,a,e,i,period,show_time):
         print '\n Applied Gauss Equations: duration [seconds] = ', tempo,'\n'
 
     return VR, VT, VW, A, E, I, dA, dE, dI
+
+def yarkovsky_drift(raio, a, obliq, A, rho, k, epsilon, PP,P):
+    """
+    Obtain the Yarkovsky drift as function of density, albedo and thermal inertia.
+    Based on Walter S. Martins Filho's Bachelor Thesis.
+    
+    Thermal inertia is obtain based on the model of Delbo et al.(2007), Icarus, 190, 236-249.
+    ___
+    INPUT:
+    radius: radius of the asteroid in km; numpy.ndarray object
+    a: semimajor axis in astronomical unit; numpy.ndarray object
+    obliq: obliquity in degrees; numpy.ndarray object
+    A: bond albedo
+    rho: density
+    k: conductivity in MKS
+    epsilon: 
+    PP: orbital period in days
+    P: rotation period in hours
+    
+    OUTPUT:
+    inercia: thermal inertia in MKS; numpy.ndarray object
+    da: yarkovsky drift in AU/Myr; numpy.ndarray object
+    """
+    L = const.L_sun.value
+    sigma = const.sigma_sb.value
+    c = const.c.value
+    obliq = np.radians(obliq)
+    distancia = const.au.value*a
+    eta = (2*np.pi)/(86400*PP) #mean motion
+    inercia = 5924.161056/raio**(.48)
+    phi = 3*L/(16*np.pi*(distancia**2)*rho*raio*c)
+    temperature = (((1-A)*L)/(4*np.pi*(distancia**2)*epsilon*sigma))**(3/4.)
+    omega = 2*np.pi/(3600*P) #angular velocity of the asteroid
+    Theta = inercia*np.sqrt(omega)
+    Theta = Theta/(epsilon*sigma)
+    Theta = Theta/((((1-A)*L)/(4*np.pi*(distancia**2)*epsilon*sigma))**(3/4.))
+    x = inercia*raio*np.sqrt(2*omega)/k
+    #Obtain the K-Functions
+    f1 = -(x-2)-np.exp(x)*((x-2)*np.cos(x)-x*np.sin(x))
+    f2 = -x-np.exp(x)*(x*np.cos(x)+(x-2)*np.sin(x))
+    f3 = x*(x+3)-np.exp(x)*(x*(x-3)*np.cos(x)-(3*(x-2))*np.sin(x))
+    f4  = 3*(x+2)+np.exp(x)*((3*(x-2))*np.cos(x)+x*(x-3)*np.sin(x))
+    j = (f1*f4+f2*f3)/(f1**2+f2**2)
+    jj = (f4**2+f3**2)/(f1**2+f2**2)
+    K1 = (1.+j)/x
+    K2 = (1.+2.*j+j)/(x**2)
+    K3 = (f1*f3-f2*f4)/((f1**2+f2**2)*x)
+    #Yarkovsky's Force
+    F = -K1*Theta/(1.+2.*K2*Theta+K3*Theta**2)
+    #Yarkovsky's drift
+    diurno = ((-8.)*(1.-A))*phi*F*np.cos(obliq)/(9.*eta)
+    sazonal = (4.*(1.-A))*phi*F*np.sin(obliq)**2/(9*eta)
+    da = diurno + sazonal
+    return inercia, da
