@@ -28,6 +28,7 @@ import time
 import astropy.constants as const
 from scipy.stats import maxwell
 import os
+from sympy import *
 
 #Useful constants
 pi = np.pi #valor de pi= 3.141592653589793
@@ -644,7 +645,7 @@ def gauss_equations(Vej,a,e,i,period,show_time):
 
     return VR, VT, VW, A, E, I, dA, dE, dI
 
-def yarkovsky_drift(raio, a, obliq, A, rho, k, epsilon, PP,P):
+def yarkovsky_drift(raio, a, obliq, P, A, rho, k, epsilon, PP):
     """
     Obtain the Yarkovsky drift as function of density, albedo and thermal inertia.
     Based on Walter S. Martins Filho's Bachelor Thesis.
@@ -659,32 +660,42 @@ def yarkovsky_drift(raio, a, obliq, A, rho, k, epsilon, PP,P):
     rho: density
     k: conductivity in MKS
     epsilon: 
-    PP: orbital period in days
-    P: rotation period in hours
+    PP:
+    P:
     
     OUTPUT:
     inercia: thermal inertia in MKS; numpy.ndarray object
     da: yarkovsky drift in AU/Myr; numpy.ndarray object
     """
+    def drift(yarkovsky):
+        F = yarkovsky
+        diurno = ((-8.)*(1.-A))*phi*F*np.cos(obliq)/(9.*eta)
+        sazonal = (4.*(1.-A))*phi*F*np.sin(obliq)**2/(9*eta)
+        da = diurno + sazonal
+        return da
+    
     L = const.L_sun.value
     sigma = const.sigma_sb.value
     c = const.c.value
     obliq = np.radians(obliq)
     distancia = const.au.value*a
-    eta = (2*np.pi)/(86400*PP) #mean motion
-    inercia = 5924.161056/raio**(.48)
+    eta = (2*np.pi)/(86400*PP)
+    inercia = 300*(2*raio*1.e-3)**(-.48)
     phi = 3*L/(16*np.pi*(distancia**2)*rho*raio*c)
     temperature = (((1-A)*L)/(4*np.pi*(distancia**2)*epsilon*sigma))**(3/4.)
-    omega = 2*np.pi/(3600*P) #angular velocity of the asteroid
+    omega = 2*np.pi/(3600*P)
     Theta = inercia*np.sqrt(omega)
     Theta = Theta/(epsilon*sigma)
     Theta = Theta/((((1-A)*L)/(4*np.pi*(distancia**2)*epsilon*sigma))**(3/4.))
-    x = inercia*raio*np.sqrt(2*omega)/k
-    #Obtain the K-Functions
-    f1 = -(x-2)-np.exp(x)*((x-2)*np.cos(x)-x*np.sin(x))
-    f2 = -x-np.exp(x)*(x*np.cos(x)+(x-2)*np.sin(x))
-    f3 = x*(x+3)-np.exp(x)*(x*(x-3)*np.cos(x)-(3*(x-2))*np.sin(x))
-    f4  = 3*(x+2)+np.exp(x)*((3*(x-2))*np.cos(x)+x*(x-3)*np.sin(x))
+    X = inercia*raio*np.sqrt(2*omega)/k
+    
+    ################# Sympy Routine ########################################
+    #Obtainm the K-Functions
+    x = Symbol('x')
+    f1 = -(x-2)-exp(x)*((x-2)*cos(x)-x*sin(x))
+    f2 = -x-exp(x)*(x*cos(x)+(x-2)*sin(x))
+    f3 = x*(x+3)-exp(x)*(x*(x-3)*cos(x)-(3*(x-2))*sin(x))
+    f4  = 3*(x+2)+exp(x)*((3*(x-2))*cos(x)+x*(x-3)*sin(x))
     j = (f1*f4+f2*f3)/(f1**2+f2**2)
     jj = (f4**2+f3**2)/(f1**2+f2**2)
     K1 = (1.+j)/x
@@ -692,8 +703,10 @@ def yarkovsky_drift(raio, a, obliq, A, rho, k, epsilon, PP,P):
     K3 = (f1*f3-f2*f4)/((f1**2+f2**2)*x)
     #Yarkovsky's Force
     F = -K1*Theta/(1.+2.*K2*Theta+K3*Theta**2)
-    #Yarkovsky's drift
-    diurno = ((-8.)*(1.-A))*phi*F*np.cos(obliq)/(9.*eta)
-    sazonal = (4.*(1.-A))*phi*F*np.sin(obliq)**2/(9*eta)
-    da = diurno + sazonal
+    yarkovsky = np.zeros(len(X))
+    for i in range(len(X)):
+        yarkovsky[i] = F[i].subs(x,X[i]).evalf() #obtain the yarkovsky force's value for the X-array
+    ############# END of Sympy Routine #########################################
+
+    da = drift(yarkovsky)
     return inercia, da
