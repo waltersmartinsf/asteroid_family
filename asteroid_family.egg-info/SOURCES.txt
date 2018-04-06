@@ -1,7 +1,0 @@
-setup.py
-asteroid_family/__init__.py
-asteroid_family.egg-info/PKG-INFO
-asteroid_family.egg-info/SOURCES.txt
-asteroid_family.egg-info/dependency_links.txt
-asteroid_family.egg-info/not-zip-safe
-asteroid_family.egg-info/top_level.txt

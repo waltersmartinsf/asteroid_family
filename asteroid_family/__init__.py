@@ -200,7 +200,7 @@ def velocity_field(mass, show_time):
 
     tempo = abs(tempo - time.time())
     if show_time == 'YES':
-        print '\n Obtain velocity field: duration [seconds] = ', tempo,'\n'
+        print('\n Obtain velocity field: duration [seconds] = '+str(tempo)+'\n')
 
     return ejecao
 
