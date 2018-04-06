@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='asteroid_family',
-      version='0.1',
+      version='0.2',
       description='Create a synthetic asteroid family',
       url='https://github.com/waltersmartinsf/asteroid_family',
       author='Walter Silva Martins Filho',

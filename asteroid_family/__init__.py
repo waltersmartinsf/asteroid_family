@@ -76,7 +76,7 @@ v2 = 10**(log_v2)
 
 #Test function:
 def test_function():
-    print "Baka-chan!"
+    print("Baka-chan!")
 
 #Functions for everything: differentiated and homogeneus families of asteroids
 def mean_vej(norm_massa):
