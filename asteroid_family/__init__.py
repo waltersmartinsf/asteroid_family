@@ -641,7 +641,7 @@ def gauss_equations(Vej,a,e,i,period,show_time):
 
     tempo = time.time() - tempo
     if show_time == 'YES':
-        print '\n Applied Gauss Equations: duration [seconds] = ', tempo,'\n'
+        print('\n Applied Gauss Equations: duration [seconds] = '+str(tempo)+'\n')
 
     return VR, VT, VW, A, E, I, dA, dE, dI
 
